@@ -6,23 +6,33 @@
 //animations
 //stats
 public class Controller : MonoBehaviour
-{
-    private Vector2 velocity = Vector2.zero;
-    private Vector2 position = Vector2.zero;
-
-    public float maxVelocity = 5f;
-    public float dampening = 0f;
-
+{ 
     //for tracking keys used in movement
     public KeyCode[] MappedKeys = new KeyCode[] { KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.Space, KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
 
     CapsuleCollider2D cCollider;
     Rigidbody2D rBody;
 
-    private bool canMove;
+    public float maxVelocity = 4f;
 
-    private bool isGrounded;    
-    private bool isFalling;
+    private bool isGrounded = false;
+    private bool isFalling = false;
+
+    private bool canControl = true;
+    public bool CanControl
+    {
+        get { return canControl; }
+        set { canControl = value; }
+    }
+
+    public bool IsFalling
+    {
+        get { return isFalling; }
+        set { isFalling = value; }
+    }
+
+    private float inputTimer = 0f;
+    public float inputTimerMax = 2f;
 
     public bool IsGrounded
     {
@@ -32,13 +42,10 @@ public class Controller : MonoBehaviour
 
     private Vector2 direction = Vector2.zero;
     private Vector2 moveDir = Vector2.zero;
-    private float moveSpeed = 7f;
+    private float moveSpeed = 7f;    
 
-    private float inputTimer = 0;
-    public float inputTimeMax = 0.03f;
-
-    private float fallSpeed = 10f;
-
+    private float elapsed = 0f;
+    public float elapsedMax = 0.03f;
 
     //jump values
     private bool isJumping = false;
@@ -46,11 +53,12 @@ public class Controller : MonoBehaviour
     public float timeToApex = 1f;
     public float jumpHeight = 5f;
     public float minJumpHeight = 1f;
-    public float gravity = 9.807f;
-    private float elapsed = 0f;
+    public float gravity = 9.807f;    
     private float initJumpVelocity = 0f;
     private float lastGrounded = 0;
     public float damp = .5f;
+
+    private Vector2 finalVelocity;
 
     private void Start()
     {
@@ -62,9 +70,8 @@ public class Controller : MonoBehaviour
     {
         elapsed = elapsed + Time.deltaTime;
         wantsToJump = false;
-
-        //is player controllable
-        if (CanMove())
+        //is player controllable (pause actions for cutscenes, etc)
+        if (CanControl)
         {
             //is character on the ground
             if (IsGrounded)
@@ -82,51 +89,23 @@ public class Controller : MonoBehaviour
                 }
             }
             else
-            {                
-                JumpTermination();
-                canMove = false;
+            {
+                if (isJumping)
+                {
+                    JumpTermination();
+                    EdgeJump();     
+                }
             }
+
+            CanMove();
         }
+        
+        Fall();
     }
 
     private void FixedUpdate()
     {
-        if (!IsGrounded && !isJumping)
-        {
-            //character is falling
-            Fall();
-        }
-        else
-        {
-            if (CanMove())
-            {
-                if (isJumping)
-                {
-                    //if pressedJumpKey then
-                    rBody.velocity = new Vector2(transform.position.x, initJumpVelocity);
-                }
-                else
-                {
-                    //rBody.velocity = moveDir * moveSpeed;
-                    if (isFalling)
-                    {
-                        EdgeJump();
-                    }
-                }
-            }
-            else
-            {
-                rBody.velocity = Vector2.zero;
-            }
-        }
-    }
-
-    private void Reset()
-    {
-        elapsed = 0;
-        wantsToJump = false;
-        canMove = false;
-        isJumping = false;       
+        rBody.velocity = finalVelocity;
     }
 
     private bool Walking()
@@ -156,9 +135,10 @@ public class Controller : MonoBehaviour
         moveDir = direction;
         //play movement animations
 
+        finalVelocity = moveDir * moveSpeed;
+
         return direction != Vector2.zero;
     }
-
 
     private void EdgeJump()
     {
@@ -177,16 +157,20 @@ public class Controller : MonoBehaviour
     }
     private void Fall()
     {
-        Debug.Log("Fall");
-        transform.Translate((Vector2.down * fallSpeed) * Time.deltaTime);
-        isFalling = true;
-        Reset();
+        if (!isGrounded && !isJumping && !isFalling)
+        {
+            Debug.Log("Fall");
+
+            float fallG = (2 * jumpHeight) / (timeToApex * timeToApex);
+            finalVelocity = new Vector2(finalVelocity.x, -fallG);
+            isFalling = true;            
+        }
     }
 
     private void JumpCalc()
     {
         Debug.Log("JumpCalc");
-        //clamping
+        //Clamping
         float v = Mathf.Sqrt((rBody.velocity.x * rBody.velocity.x) + (rBody.velocity.y * rBody.velocity.y));
         if(v > maxVelocity)
         {
@@ -200,17 +184,16 @@ public class Controller : MonoBehaviour
         rBody.velocity = dampVelocity;
 
         //-- what is the gravity that would allow jumping to a given height?
-        //g = (2*jumpHeight)/(timeToApex^2)   
         gravity = (2 * jumpHeight) / (timeToApex * timeToApex);
 
-        //-- what is the initial jump velocity? 
-        //initJumpVelocity = math.sqrt(2*g* jumpHeight)
+        //-- what is the initial jump velocity?
         initJumpVelocity = Mathf.Sqrt(2 * gravity * jumpHeight);
 
         //-- how long does it take to reach the maximum height of a jump?
         //-- note: if "initJumpVelocity" is not a multiple of "g" the maximum height is reached between frames
-        //timeToApex = initJumpVelocity / g
-        timeToApex = initJumpVelocity / gravity;        
+        timeToApex = initJumpVelocity / gravity;
+
+        finalVelocity = new Vector2(moveDir.x * moveSpeed, initJumpVelocity);
     }
 
     private void Jump()
@@ -218,10 +201,11 @@ public class Controller : MonoBehaviour
         if (Input.GetKey(KeyCode.Space))
         {
             Debug.Log("Jumping");
-            isJumping = true;           
+            isJumping = true;
+            isGrounded = false;
+            elapsed = 0;
 
             //if lastJump and elapsed - lastJump< 0.2
-                //wantsToJump = true
             float lastJump = (elapsed + Time.deltaTime);
             if ((lastJump * elapsed) - lastJump < .2f)
             {
@@ -232,15 +216,15 @@ public class Controller : MonoBehaviour
 
     private void JumpTermination()
     {
-        //timeToApex breached
-        if(elapsed >= timeToApex)
+        //is timeToApex breached
+        if(elapsed >= timeToApex || !Input.GetKey(KeyCode.Space))
         {
             isJumping = false;
+            isFalling = false;
         }
 
         //--what is the velocity required to terminate a jump ?
         //--note : only works when "g" is negative
-        //termVelocity = math.sqrt(initJumpVelocity ^ 2 + 2 * g * (jumpHeight - minJumpHeight))
         float termVelocity = Mathf.Sqrt((initJumpVelocity * initJumpVelocity) + 2 * gravity * (jumpHeight - minJumpHeight));        
 
 
@@ -251,9 +235,7 @@ public class Controller : MonoBehaviour
         //if releasedJumpKey then
         if (!Input.GetKey(KeyCode.Space))
         {
-            //-- is the player ascending fast enough to allow jump termination ?
-            //if player.yv > termVelocity then
-            //player.yv = termVelocity
+            //-- is the player ascending fast enough to allow jump termination
             if(rBody.velocity.y > termVelocity)
             {
                 Vector2 newVelocity = new Vector2(rBody.velocity.x, termVelocity);
@@ -263,21 +245,17 @@ public class Controller : MonoBehaviour
     }
 
     //checks if there has been user input, or pauses movement
-    private bool CanMove()
+    private void CanMove()
     {
-        inputTimer += 1 * Time.deltaTime;
-
-        if (!Input.anyKey)
-        {
-            Reset();
+        inputTimer += 1f * Time.deltaTime;
+        
+        if (!Input.anyKey && !isFalling)
+        {            
             //if no input after i seconds
-            if (inputTimer > inputTimeMax)
+            if (inputTimer > inputTimerMax)
             {
-                //if character is not on the ground
-                canMove = IsGrounded;
-
-                //if no input has been detected
-                Reset();
+                //stop in place
+                finalVelocity = Vector2.zero;
             }
         }
         else
@@ -289,12 +267,9 @@ public class Controller : MonoBehaviour
                 {
                     //reset timer if there is player input
                     inputTimer = 0;
-                    canMove = true;
                 }
             }
         }
-
-        return canMove;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

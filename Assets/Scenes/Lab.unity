@@ -386,11 +386,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9f94b3455c15d84193c3c21e41b2c07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxVelocity: 10
-  dampening: 0
   MappedKeys: 770000006100000073000000640000002000000014010000130100001101000012010000
-  inputTimeMax: 1
-  timeToApex: 1
+  maxVelocity: 10
+  inputTimerMax: 1
+  elapsedMax: 0.03
+  timeToApex: 0.7
   jumpHeight: 4
   minJumpHeight: 1
   gravity: 1
@@ -711,7 +711,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 948953652}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.07, y: -3.31, z: 0}
+  m_LocalPosition: {x: -6.62, y: -3.47, z: 0}
   m_LocalScale: {x: 853.1146, y: 73.97407, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -843,8 +843,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1060359490}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.007, y: -4.62, z: 0}
-  m_LocalScale: {x: 1335.4763, y: 73.97407, z: 1}
+  m_LocalPosition: {x: -2.319, y: -4.62, z: 0}
+  m_LocalScale: {x: 873.4015, y: 73.97407, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 4

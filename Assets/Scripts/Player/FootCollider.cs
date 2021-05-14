@@ -13,19 +13,22 @@ public class FootCollider : MonoBehaviour
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
-    {
-        
+    {   
         //floor collision
         if (collision.gameObject.layer == 9)
         {
-            Debug.Log(collision.gameObject.layer);
+            Debug.Log("FootCollider OnTriggerEnter2D");
             cController.IsGrounded = true;
-            //cController.jumpMaxReached = false;
         }
     }
 
     private void OnTriggerExit2D(Collider2D collision)
     {
-        cController.IsGrounded = !(collision.gameObject.layer == 9);
+        //fall off ground
+        if(collision.gameObject.layer == 9)
+        {
+            Debug.Log("FootCollider OnTriggerExit2D");            
+            cController.IsGrounded = false;
+        }
     }
 }
