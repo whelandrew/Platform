@@ -19,6 +19,7 @@ public class FootCollider : MonoBehaviour
         {
             Debug.Log("FootCollider OnTriggerEnter2D");
             cController.IsGrounded = true;
+            cController.IsFalling = false;
         }
     }
 
@@ -29,6 +30,7 @@ public class FootCollider : MonoBehaviour
         {
             Debug.Log("FootCollider OnTriggerExit2D");            
             cController.IsGrounded = false;
+            cController.IsFalling = true;                
         }
     }
 }
