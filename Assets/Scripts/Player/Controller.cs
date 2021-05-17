@@ -3,10 +3,14 @@
 
 //parent for character controls (all character-related classes go through here)
 //movement
-//animations
-//stats
+//animations TODO - animations for sides of ground & walls, ceiling & bottom of ground
+//stats TODO
 public class Controller : MonoBehaviour
-{ 
+{
+    private ShootController shootController;
+    private SwingController swingController;
+    public GameboardData gbData;
+
     //for tracking keys used in movement
     public KeyCode[] MappedKeys = new KeyCode[] { KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.Space, KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
 
@@ -53,11 +57,11 @@ public class Controller : MonoBehaviour
     private bool wantsToJump = false;
     public float timeToApex = 1f;
     public float jumpHeight = 5f;
-    public float minJumpHeight = 1f;
-    public float gravity = 9.807f;    
+    public float minJumpHeight = 1f;    
     private float initJumpVelocity = 0f;
     private float lastGrounded = 0;
     public float damp = .5f;
+    public float fallSpeed = 10f;
 
     private Vector2 finalVelocity;
 
@@ -65,13 +69,14 @@ public class Controller : MonoBehaviour
     {
         cCollider = GetComponent<CapsuleCollider2D>();
         rBody = GetComponent<Rigidbody2D>();
+        shootController = GetComponent<ShootController>();
+        swingController = GetComponent<SwingController>();
     }
 
     private void Update()
     {
         elapsed += Time.deltaTime;
 
-        wantsToJump = false;
         //is character on the ground
         if (IsGrounded)
         {
@@ -88,14 +93,20 @@ public class Controller : MonoBehaviour
                 else
                 {
                     if (CanMove())
-                    {
+                    {                        
                         Walking();
                     }                    
                 }
+                Fire();
             }
         }
         else
         {
+            if(CanControl)
+            {
+                Fire();
+            }
+
             //post jump
             JumpTermination();
             //EdgeJump();
@@ -108,6 +119,15 @@ public class Controller : MonoBehaviour
     private void FixedUpdate()
     {
         rBody.velocity = finalVelocity;
+    }
+
+    private void Fire()
+    {        
+        if (Input.GetKey(KeyCode.E) || Input.GetMouseButton(0))
+        {
+            //sController.FireWeapon();          
+            swingController.Sword();
+        }
     }
 
     private bool Walking()
@@ -145,28 +165,27 @@ public class Controller : MonoBehaviour
 
     private void EdgeJump()
     {
-        elapsed = 0;
-        lastGrounded = 0;
-
         if (isGrounded)
         {
             lastGrounded = elapsed;
-        } 
+        }
 
-        if (wantsToJump && (elapsed - lastGrounded < 0.1))
+        if (wantsToJump && (elapsed - lastGrounded < 1f))
         {
             Jump();
         }
     }
     private void Fall()
     {
-        if (!isFalling && !isGrounded)
+        if (!isFalling && !isGrounded && !isJumping)
         {
             Debug.Log("Fall");
 
-            float fallG = (2 * jumpHeight) / (timeToApex * timeToApex);
+            float fallG = (2 * fallSpeed) / (timeToApex * timeToApex);
             finalVelocity = new Vector2(finalVelocity.x, -fallG);
             isFalling = true;
+
+            //falling animation
         }
     }
 
@@ -191,7 +210,7 @@ public class Controller : MonoBehaviour
         rBody.velocity = dampVelocity;
 
         //-- what is the gravity that would allow jumping to a given height?
-        gravity = (2 * jumpHeight) / (timeToApex * timeToApex);
+        float gravity = (2 * jumpHeight) / (timeToApex * timeToApex);
 
         //-- what is the initial jump velocity?
         initJumpVelocity = Mathf.Sqrt(2 * gravity * jumpHeight);
@@ -221,10 +240,13 @@ public class Controller : MonoBehaviour
 
             //if lastJump and elapsed - lastJump< 0.2
             float lastJump = (elapsed + Time.deltaTime);
-            if ((lastJump * elapsed) - lastJump < .2f)
+            //if ((lastJump * elapsed) - lastJump < .2f)
+            if((lastJump < .2f) && (elapsed < .2f))
             {
                 wantsToJump = true;
             }            
+
+            //jump animation            
         }
     }
 
@@ -236,13 +258,13 @@ public class Controller : MonoBehaviour
             if (elapsed >= timeToApex)
             {
                 isJumping = false;
-                IsFalling = false;
+                isFalling = false;
             }
 
             //--what is the velocity required to terminate a jump ?
             //--note : only works when "g" is negative
             //termVelocity = math.sqrt(initJumpVelocity^2 + 2*g*(jumpHeight - minJumpHeight))
-            float termVelocity = Mathf.Sqrt((initJumpVelocity * initJumpVelocity) + 2 * -gravity * (jumpHeight - minJumpHeight));
+            float termVelocity = Mathf.Sqrt((initJumpVelocity * initJumpVelocity) + 2 * -gbData.gravity * (jumpHeight - minJumpHeight));
 
             //-- how much time is available until a jump can no longer be terminated ?
             //--note : "minJumpHeight" must be greater than 0
@@ -257,7 +279,7 @@ public class Controller : MonoBehaviour
                     Vector2 newVelocity = new Vector2(rBody.velocity.x, termVelocity);
                     rBody.velocity = newVelocity;
                     isJumping = false;
-                    IsFalling = false;
+                    isFalling = false;
                 }
             }
         }
@@ -297,11 +319,48 @@ public class Controller : MonoBehaviour
         return false;
     }
 
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        //bullet collision
+        if (collision.gameObject.layer == 13)
+        {
+            Debug.Log("Controller OnTriggerEnter2D");
+            BulletData bData = collision.gameObject.GetComponent<BulletData>();
+            if (bData.shooter == this.gameObject.layer)
+            {
+                Physics2D.IgnoreCollision(collision, GetComponent<Collider2D>());
+            }
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        //floor collision
+        if (collision.gameObject.layer == 9)
+        {
+            Debug.Log("Controller OnTriggerEnter2D");
+            //cancel jumping when colliding with floor layer
+            if (isJumping)
+            {
+                isJumping = false;
+                fallSpeed = 2f;
+
+                //sliding on the wall animation
+            }
+        }
     }
     private void OnCollisionExit2D(Collision2D collision)
     {
-
+        //change fallSpeed if off ground
+        if (collision.gameObject.layer == 9)
+        {
+            Debug.Log("Collision OnTriggerExit2D");
+            fallSpeed = 6f;
+        }        
     }
 }
