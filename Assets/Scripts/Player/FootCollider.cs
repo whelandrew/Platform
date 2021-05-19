@@ -24,9 +24,9 @@ public class FootCollider : MonoBehaviour
         //floor collision
         if (collision.gameObject.layer == 9)
         {
-            Debug.Log("FootCollider OnTriggerEnter2D");
-            cController.IsGrounded = true;
-            cController.IsFalling = false;
+            //Debug.Log("FootCollider OnTriggerEnter2D");
+            cController.isGrounded = true;
+            cController.isFalling = false;
         }
     }
 
@@ -35,8 +35,11 @@ public class FootCollider : MonoBehaviour
         //fall off ground
         if(collision.gameObject.layer == 9)
         {
-            Debug.Log("FootCollider OnTriggerExit2D");            
-            cController.IsGrounded = false;          
+            //Debug.Log("FootCollider OnTriggerExit2D");      
+            if (!cController.isDashing)
+            {
+                cController.isGrounded = false;
+            }
 
             //TODO register which side of ground is touched
         }

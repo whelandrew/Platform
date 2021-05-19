@@ -7,63 +7,36 @@
 //stats TODO
 public class Controller : MonoBehaviour
 {
+    public GameboardData gbData;
+
     private ShootController shootController;
     private SwingController swingController;
-    public GameboardData gbData;
+    private JumpController jController;
 
     //for tracking keys used in movement
     public KeyCode[] MappedKeys = new KeyCode[] { KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.Space, KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
+    public LayerMask canHit;
 
     CapsuleCollider2D cCollider;
     Rigidbody2D rBody;
 
-    public float maxVelocity = 4f;
+    public bool isWalking = false;
+    public bool isGrounded = false;
+    public bool isFalling = false;
+    public bool isJumping = false;
+    public bool isDashing = false;
 
-    private bool isWalking = false;
-    private bool isGrounded = false;
-    private bool isFalling = false;
+    public Vector2 finalVelocity;
 
-    private bool canControl = true;
-    public bool CanControl
-    {
-        get { return canControl; }
-        set { canControl = value; }
-    }
-
-    public bool IsFalling
-    {
-        get { return isFalling; }
-        set { isFalling = value; }
-    }
-
+    public bool canControl = true;
     private float inputTimer = 0f;
     public float inputTimerMax = 2f;
 
-    public bool IsGrounded
-    {
-        get { return isGrounded; }
-        set { isGrounded = value; }
-    }
-
     private Vector2 direction = Vector2.zero;
-    private Vector2 moveDir = Vector2.zero;
-    private float moveSpeed = 7f;    
-
-    private float elapsed = 0f;
-    public float elapsedMax = 0.03f;
-
-    //jump values
-    private bool isJumping = false;
-    private bool wantsToJump = false;
-    public float timeToApex = 1f;
-    public float jumpHeight = 5f;
-    public float minJumpHeight = 1f;    
-    private float initJumpVelocity = 0f;
-    private float lastGrounded = 0;
-    public float damp = .5f;
-    public float fallSpeed = 10f;
-
-    private Vector2 finalVelocity;
+    public Vector2 moveDir = Vector2.zero;
+    public float moveSpeed = 7f;
+    public int facing = 1;    
+    public float dashDistance = 10f;
 
     private void Start()
     {
@@ -71,45 +44,52 @@ public class Controller : MonoBehaviour
         rBody = GetComponent<Rigidbody2D>();
         shootController = GetComponent<ShootController>();
         swingController = GetComponent<SwingController>();
+        jController = GetComponent<JumpController>();
     }
 
     private void Update()
     {
-        elapsed += Time.deltaTime;
+        gbData.elapsed += Time.deltaTime;
 
         //is character on the ground
-        if (IsGrounded)
+        if (isGrounded)
         {
+            Facing();
             //is player controllable (pause actions for cutscenes, etc)
-            if (CanControl)
+            if (canControl)
             {
-                Debug.Log("Character can be controlled");
-                Jump();
+                //Debug.Log("Character can be controlled");
+                if (Input.GetKey(KeyCode.Space) && !isJumping)
+                {
+                    jController.InitJump();
+                }
 
                 if (isJumping)
                 {
-                    JumpCalc();
+                    jController.JumpCalc();
                 }
                 else
                 {
                     if (CanMove())
-                    {                        
+                    {
                         Walking();
                     }                    
                 }
                 Fire();
             }
+
+            StopDash();
         }
         else
         {
-            if(CanControl)
+            if (canControl)
             {
                 Fire();
             }
 
             //post jump
-            JumpTermination();
-            //EdgeJump();
+            jController.JumpTermination();
+            //jController.EdgeJump();
 
             //fall to ground
             Fall();
@@ -123,16 +103,80 @@ public class Controller : MonoBehaviour
 
     private void Fire()
     {        
-        if (Input.GetKey(KeyCode.E) || Input.GetMouseButton(0))
+        if (Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0))
         {
-            //sController.FireWeapon();          
-            swingController.Sword();
+            //shootController.FireWeapon();          
+            //swingController.Sword();
+            Dash();
         }
     }
 
+    private void StopDash()
+    {
+        if (isDashing)
+        {
+            if (facing > 0)
+            {
+                if (transform.localPosition.x >= finalVelocity.x)
+                {
+                    isDashing = false;
+                    finalVelocity = Vector2.zero;
+                }
+            }
+            else
+            {
+                if (transform.localPosition.x <= finalVelocity.x)
+                {
+                    isDashing = false;
+                    finalVelocity = Vector2.zero;
+                }
+            }
+        }
+    }
+
+    private void Dash()
+    {
+        if (!isDashing)
+        {
+            isDashing = true;
+            Vector2 dashTarget = new Vector2(facing * transform.localPosition.x, transform.position.y);
+            finalVelocity = DashBreak(dashTarget);            
+        }
+    }
+
+    private Vector2 DashBreak(Vector2 end)
+    {
+        if (facing == 1)
+        {            
+            var hit = Physics2D.Linecast(Vector2.up, new Vector2(cCollider.size.x + dashDistance, end.y));
+            if (hit.collider != null)
+            {
+                if ((canHit & 1 << hit.collider.gameObject.layer) == 1 << hit.collider.gameObject.layer)
+                {
+                    Debug.Log("DashBreak " + hit.collider);
+                    return new Vector2(hit.collider.bounds.min.x - .5f, end.y);
+                }
+            }
+        }
+        else
+        {
+            var hit = Physics2D.Linecast(Vector2.up, new Vector2(cCollider.bounds.min.x - dashDistance, end.y));
+            if (hit.collider != null)
+            {
+                if ((canHit & 1 << hit.collider.gameObject.layer) == 1 << hit.collider.gameObject.layer)
+                {
+                    Debug.Log("DashBreak " + hit.collider);
+                    return new Vector2(hit.collider.bounds.min.x - .5f, end.y);
+                }
+            }
+        }
+
+        return end;
+    }
+    
     private bool Walking()
     {
-        Debug.Log("Moving");
+        //Debug.Log("Moving");
         if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
         {
             //up
@@ -147,11 +191,13 @@ public class Controller : MonoBehaviour
         {
             //left
             direction = Vector2.left;
+            facing = -1;
         }
         if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
         {
             //right
             direction = Vector2.right;
+            facing = 1;
         }
 
         moveDir = direction;
@@ -163,25 +209,25 @@ public class Controller : MonoBehaviour
         return direction != Vector2.zero;
     }
 
-    private void EdgeJump()
+    private void Facing()
     {
-        if (isGrounded)
+        if (facing > 0)
         {
-            lastGrounded = elapsed;
+            transform.rotation = Quaternion.identity;
         }
-
-        if (wantsToJump && (elapsed - lastGrounded < 1f))
+        else
         {
-            Jump();
+            transform.rotation = Quaternion.Euler(0, 180, 0);
         }
     }
+    
     private void Fall()
     {
         if (!isFalling && !isGrounded && !isJumping)
         {
-            Debug.Log("Fall");
+            //Debug.Log("Fall");
 
-            float fallG = (2 * fallSpeed) / (timeToApex * timeToApex);
+            float fallG = (2 * gbData.fallSpeed) / (gbData.timeToApex * gbData.timeToApex);
             finalVelocity = new Vector2(finalVelocity.x, -fallG);
             isFalling = true;
 
@@ -189,107 +235,18 @@ public class Controller : MonoBehaviour
         }
     }
 
-    private void JumpCalc()
-    {
-        Debug.Log("JumpCalc");
-        
-        float X = rBody.velocity.x;
-        float Y = rBody.velocity.y;
-
-        //Clamping
-        float v = Mathf.Sqrt((X*X) + (Y*Y));
-        if(v > maxVelocity)
-        {
-            float vs = maxVelocity / v;
-            Vector2 clamp = new Vector2(X * vs, Y * vs);
-            rBody.velocity = clamp;
-        }
-
-        //Dampening
-        Vector2 dampVelocity = new Vector2((X / (1 + damp * Time.deltaTime)), (Y / (1 + damp * Time.deltaTime)));
-        rBody.velocity = dampVelocity;
-
-        //-- what is the gravity that would allow jumping to a given height?
-        float gravity = (2 * jumpHeight) / (timeToApex * timeToApex);
-
-        //-- what is the initial jump velocity?
-        initJumpVelocity = Mathf.Sqrt(2 * gravity * jumpHeight);
-
-        //-- how long does it take to reach the maximum height of a jump?
-        //-- note: if "initJumpVelocity" is not a multiple of "g" the maximum height is reached between frames
-        timeToApex = initJumpVelocity / gravity;
-
-        if (isWalking)
-        {
-            finalVelocity = new Vector2(moveDir.x * moveSpeed, initJumpVelocity);
-        }
-        else
-        {
-            finalVelocity = new Vector2(0, initJumpVelocity);
-        }
-    }
-
-    private void Jump()
-    {
-        if (Input.GetKey(KeyCode.Space) && !isJumping)
-        {
-            Debug.Log("Jumping");
-            isJumping = true;
-            elapsed = 0;
-            lastGrounded = 0;
-
-            //if lastJump and elapsed - lastJump< 0.2
-            float lastJump = (elapsed + Time.deltaTime);
-            //if ((lastJump * elapsed) - lastJump < .2f)
-            if((lastJump < .2f) && (elapsed < .2f))
-            {
-                wantsToJump = true;
-            }            
-
-            //jump animation            
-        }
-    }
-
-    private void JumpTermination()
-    {
-        if (isJumping)
-        {
-            //is timeToApex breached          
-            if (elapsed >= timeToApex)
-            {
-                isJumping = false;
-                isFalling = false;
-            }
-
-            //--what is the velocity required to terminate a jump ?
-            //--note : only works when "g" is negative
-            //termVelocity = math.sqrt(initJumpVelocity^2 + 2*g*(jumpHeight - minJumpHeight))
-            float termVelocity = Mathf.Sqrt((initJumpVelocity * initJumpVelocity) + 2 * -gbData.gravity * (jumpHeight - minJumpHeight));
-
-            //-- how much time is available until a jump can no longer be terminated ?
-            //--note : "minJumpHeight" must be greater than 0
-            //termTime = timeToApex - (2 * (jumpHeight - minJumpHeight) / (initJumpVelocity + termVelocity))
-
-            //if releasedJumpKey then
-            if (!Input.GetKey(KeyCode.Space))
-            {
-                //-- is the player ascending fast enough to allow jump termination
-                if (rBody.velocity.y > termVelocity)
-                {
-                    Vector2 newVelocity = new Vector2(rBody.velocity.x, termVelocity);
-                    rBody.velocity = newVelocity;
-                    isJumping = false;
-                    isFalling = false;
-                }
-            }
-        }
-    }
+   
 
     //checks if there has been user input, or pauses movement
     private bool CanMove()
     {
         inputTimer += 1f * Time.deltaTime;
         
+        if(isDashing)
+        {
+            return false;
+        }
+
         if (!Input.anyKey)
         {            
             //if no input after i seconds
@@ -343,12 +300,13 @@ public class Controller : MonoBehaviour
         //floor collision
         if (collision.gameObject.layer == 9)
         {
-            Debug.Log("Controller OnTriggerEnter2D");
+            //Debug.Log("Controller OnTriggerEnter2D");
             //cancel jumping when colliding with floor layer
             if (isJumping)
             {
+                isDashing = false;
                 isJumping = false;
-                fallSpeed = 2f;
+                gbData.fallSpeed = 2f;
 
                 //sliding on the wall animation
             }
@@ -359,8 +317,8 @@ public class Controller : MonoBehaviour
         //change fallSpeed if off ground
         if (collision.gameObject.layer == 9)
         {
-            Debug.Log("Collision OnTriggerExit2D");
-            fallSpeed = 6f;
+            //Debug.Log("Collision OnTriggerExit2D");
+            gbData.fallSpeed = 6f;
         }        
     }
 }
