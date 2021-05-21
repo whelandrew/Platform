@@ -58,6 +58,7 @@ public class Controller : MonoBehaviour
             //is player controllable (pause actions for cutscenes, etc)
             if (canControl)
             {
+                Dash();
                 //Debug.Log("Character can be controlled");
                 if (Input.GetKey(KeyCode.Space) && !isJumping)
                 {
@@ -76,9 +77,7 @@ public class Controller : MonoBehaviour
                     }                    
                 }
                 Fire();
-            }
-
-            StopDash();
+            }            
         }
         else
         {
@@ -103,47 +102,99 @@ public class Controller : MonoBehaviour
 
     private void Fire()
     {        
-        if (Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0))
+        if (Input.GetKey(KeyCode.E) || Input.GetMouseButton(0))
         {
             //shootController.FireWeapon();          
-            //swingController.Sword();
-            Dash();
+            //swingController.Sword();            
         }
     }
 
     private void StopDash()
     {
-        if (isDashing)
+    }
+    /*
+    if (isDashing)
+    {
+        if (facing > 0)
         {
-            if (facing > 0)
+            if (transform.localPosition.x >= finalVelocity.x)
             {
-                if (transform.localPosition.x >= finalVelocity.x)
-                {
-                    isDashing = false;
-                    finalVelocity = Vector2.zero;
-                }
+                isDashing = false;
+                finalVelocity = Vector2.zero;
             }
-            else
+        }
+        else
+        {
+            if (transform.localPosition.x <= finalVelocity.x)
             {
-                if (transform.localPosition.x <= finalVelocity.x)
-                {
-                    isDashing = false;
-                    finalVelocity = Vector2.zero;
-                }
+                isDashing = false;
+                finalVelocity = Vector2.zero;
             }
         }
     }
-
+}
+    */
     private void Dash()
     {
-        if (!isDashing)
+        if (Input.GetMouseButtonDown(0))
         {
-            isDashing = true;
-            Vector2 dashTarget = new Vector2(facing * transform.localPosition.x, transform.position.y);
-            finalVelocity = DashBreak(dashTarget);            
+            //if (!isDashing)
+            {
+                isDashing = true;
+
+                Vector3 target = Vector3.zero;
+                if (target.x == 0)
+                {
+                    target = new Vector3(dashDistance * facing, 0);
+                }
+                else
+                {
+                    target = new Vector3(transform.position.x * facing * dashDistance, 0);
+                }
+
+
+                Vector3 final = DashBreak(target);
+                Debug.Log("Final " + final);
+                transform.position += final;
+                //transform.position -= target;
+
+                //Vector2 dashTarget = new Vector2(facing * transform.localPosition.x, transform.position.y);
+                //finalVelocity = DashBreak(dashTarget);                        
+            }
         }
     }
 
+    private Vector3 DashBreak(Vector3 target)
+    {
+        Debug.Log("Start " + transform.position);
+        Debug.Log("DashBreak " + target);
+        Vector3 hitTarget = new Vector3(target.x, transform.position.y);
+        var hit = Physics2D.Linecast(Vector2.up, hitTarget);
+        if (hit.collider != null)
+        {
+            if ((canHit & 1 << hit.collider.gameObject.layer) == 1 << hit.collider.gameObject.layer)
+            {                
+
+                //Debug.Log("DashBreak " + hit.collider);
+                if (target.x < 0)
+                {
+                    //float dif = Vector3.Distance(hit.collider.bounds.max, transform.position);
+                    float dif = hit.collider.bounds.max.x - transform.position.x;
+                    Debug.Log(dif);
+                    return new Vector3(dif + .5f, target.y);
+                }
+                else
+                {
+                    float dif = hit.collider.bounds.min.x - transform.position.x;
+                    return new Vector3(dif - .5f, target.y);
+                }
+            }
+        }
+
+        return target;
+    }
+
+    /*
     private Vector2 DashBreak(Vector2 end)
     {
         if (facing == 1)
@@ -173,6 +224,7 @@ public class Controller : MonoBehaviour
 
         return end;
     }
+    */
     
     private bool Walking()
     {
@@ -242,10 +294,10 @@ public class Controller : MonoBehaviour
     {
         inputTimer += 1f * Time.deltaTime;
         
-        if(isDashing)
-        {
-            return false;
-        }
+        //if(isDashing)
+        //{
+        //    return false;
+        //}
 
         if (!Input.anyKey)
         {            
@@ -304,7 +356,7 @@ public class Controller : MonoBehaviour
             //cancel jumping when colliding with floor layer
             if (isJumping)
             {
-                isDashing = false;
+                //isDashing = false;
                 isJumping = false;
                 gbData.fallSpeed = 2f;
 
