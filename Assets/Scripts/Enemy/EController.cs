@@ -12,7 +12,7 @@ public class EController : MonoBehaviour
     public bool isGrounded = false;
     public bool isFalling = false;
     public bool isJumping = false;
-    public bool canControl = false;
+    public bool canControl = true;
 
     private int facing = 0;
 
@@ -32,8 +32,9 @@ public class EController : MonoBehaviour
             Facing();
             //is player controllable (pause actions for cutscenes, etc)
             if (canControl)
-            {                
+            {
                 //perform behaviors (will be based off of eData)
+                behaviors.BehaviorStyles();
 
             }
         }

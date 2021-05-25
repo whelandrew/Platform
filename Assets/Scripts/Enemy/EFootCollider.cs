@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-public class FootCollider : MonoBehaviour
+public class EFootCollider : MonoBehaviour
 {
-    public Controller cController;
+    public EController eController;
     public CapsuleCollider2D cCollider;
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -18,26 +20,22 @@ public class FootCollider : MonoBehaviour
                 Physics2D.IgnoreCollision(collision, cCollider);
             }
         }
-        
+
         //floor collision
         if (collision.gameObject.layer == 9)
         {
             //Debug.Log("FootCollider OnTriggerEnter2D");
-            cController.isGrounded = true;
-            cController.isFalling = false;
+            eController.isGrounded = true;
+            eController.isFalling = false;
         }
     }
 
     private void OnTriggerExit2D(Collider2D collision)
     {
         //fall off ground
-        if(collision.gameObject.layer == 9)
+        if (collision.gameObject.layer == 9)
         {
-            //Debug.Log("FootCollider OnTriggerExit2D");      
-            if (!cController.isDashing)
-            {
-                cController.isGrounded = false;
-            }
+            eController.isGrounded = false;
 
             //TODO register which side of ground is touched
         }
