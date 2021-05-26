@@ -193,38 +193,6 @@ public class Controller : MonoBehaviour
 
         return target;
     }
-
-    /*
-    private Vector2 DashBreak(Vector2 end)
-    {
-        if (facing == 1)
-        {            
-            var hit = Physics2D.Linecast(Vector2.up, new Vector2(cCollider.size.x + dashDistance, end.y));
-            if (hit.collider != null)
-            {
-                if ((canHit & 1 << hit.collider.gameObject.layer) == 1 << hit.collider.gameObject.layer)
-                {
-                    Debug.Log("DashBreak " + hit.collider);
-                    return new Vector2(hit.collider.bounds.min.x - .5f, end.y);
-                }
-            }
-        }
-        else
-        {
-            var hit = Physics2D.Linecast(Vector2.up, new Vector2(cCollider.bounds.min.x - dashDistance, end.y));
-            if (hit.collider != null)
-            {
-                if ((canHit & 1 << hit.collider.gameObject.layer) == 1 << hit.collider.gameObject.layer)
-                {
-                    Debug.Log("DashBreak " + hit.collider);
-                    return new Vector2(hit.collider.bounds.min.x - .5f, end.y);
-                }
-            }
-        }
-
-        return end;
-    }
-    */
     
     private bool Walking()
     {
