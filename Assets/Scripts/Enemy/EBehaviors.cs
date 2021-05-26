@@ -12,6 +12,8 @@ public class EBehaviors : MonoBehaviour
     private Vector2 startPos;
     private Vector2 endPos;
 
+    public LayerMask canHit;
+
     private void Start()
     {
         eController = GetComponent<EController>();
@@ -22,7 +24,8 @@ public class EBehaviors : MonoBehaviour
     {
         if (isPatroling)
         {
-            Debug.Log(transform.position);
+            //TODO switch positions
+            PatrolSwap();
         }
     }
 
@@ -36,7 +39,7 @@ public class EBehaviors : MonoBehaviour
 
             // STARTING ACTIONS
             //A - Patrol
-            Patrol();
+            StartPatrol();
             //B - Stationary
 
             //REACTIONS
@@ -57,23 +60,58 @@ public class EBehaviors : MonoBehaviour
         return isIdle;
     }
 
+    void SetMovements(Vector3 start, Vector3 end)
+    {
+        startPos = start;
+        endPos = end;
+    }
+
+    void PatrolSwap()
+    {
+
+    }
+
+    void StartPatrol()
+    {
+        SetMovements(this.transform.position, new Vector2(startPos.x + 50f, startPos.y));
+        Patrol();
+    }
+
     void Patrol()
     {
-        startPos = this.transform.position;
-        endPos = new Vector2(startPos.x + 50, startPos.y);
-
         //detect any walls that block destination
+        WallCheck();
+
         //detect any gaps in floor
 
-        eController.finalVelocity = endPos*.2f;
-
-        Debug.Log(endPos * .2f);
-
+        eController.finalVelocity = endPos * .2f;
         isPatroling = true;
     }
 
-    void WallCheck()
+    private void WallCheck()
     {
+        Debug.Log("Start " + startPos);
+        Debug.Log("WallCheck " + endPos);
 
+        Vector3 hitTarget = new Vector3(endPos.x, startPos.y);
+        var hit = Physisc2D.Linecast(Vector2.up, hitTarget);
+
+        if(hit.collider != null)
+        {
+            //TODO define canHit in Unity
+            if((canHit & 1 << hit.collider.gameObject.layer) == 1 << hit.collider.gameObject.layer)
+            {
+                if(endPos.x < 0)
+                {
+                    float dif = hit.collider.bounds.max.x - startPos.x;
+                    endPos = Vector3(dif + .5f, endPos.y);
+                }
+                else
+                {
+                    float dif = hit.collider.bounds.min.x - startPos.x;
+                    endPos = Vector3(dif - .5f, endPos.y);
+                }
+            }
+        }
     }
 }
