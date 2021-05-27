@@ -6,6 +6,8 @@ public class EBehaviors : MonoBehaviour
     EData eData;
     EController eController;
 
+    Patrol patrol;
+
     private bool isIdle = true;
     private bool isPatroling = false;
 
@@ -18,6 +20,7 @@ public class EBehaviors : MonoBehaviour
     {
         eController = GetComponent<EController>();
         eData = GetComponent<EData>();
+        patrol = new Patrol();
     }
 
     private void Update()
@@ -25,7 +28,7 @@ public class EBehaviors : MonoBehaviour
         if (isPatroling)
         {
             //TODO switch positions
-            PatrolSwap();
+            eController.finalVelocity = patrol.GetCurrentDirection(this.transform.position) * 0.8f;
         }
     }
 
@@ -38,7 +41,7 @@ public class EBehaviors : MonoBehaviour
             //0 - Idle
 
             // STARTING ACTIONS
-            //A - Patrol
+            //A - Patrol            
             StartPatrol();
             //B - Stationary
 
@@ -60,58 +63,12 @@ public class EBehaviors : MonoBehaviour
         return isIdle;
     }
 
-    void SetMovements(Vector3 start, Vector3 end)
-    {
-        startPos = start;
-        endPos = end;
-    }
-
-    void PatrolSwap()
-    {
-
-    }
-
     void StartPatrol()
     {
-        SetMovements(this.transform.position, new Vector2(startPos.x + 50f, startPos.y));
-        Patrol();
-    }
+        patrol.SetPatrolLocations(transform.position, canHit, 50f);
 
-    void Patrol()
-    {
-        //detect any walls that block destination
-        WallCheck();
+        eController.finalVelocity = patrol.GetCurrentDirection(this.transform.position) * 0.2f;
 
-        //detect any gaps in floor
-
-        eController.finalVelocity = endPos * .2f;
         isPatroling = true;
-    }
-
-    private void WallCheck()
-    {
-        Debug.Log("Start " + startPos);
-        Debug.Log("WallCheck " + endPos);
-
-        Vector3 hitTarget = new Vector3(endPos.x, startPos.y);
-        var hit = Physisc2D.Linecast(Vector2.up, hitTarget);
-
-        if(hit.collider != null)
-        {
-            //TODO define canHit in Unity
-            if((canHit & 1 << hit.collider.gameObject.layer) == 1 << hit.collider.gameObject.layer)
-            {
-                if(endPos.x < 0)
-                {
-                    float dif = hit.collider.bounds.max.x - startPos.x;
-                    endPos = Vector3(dif + .5f, endPos.y);
-                }
-                else
-                {
-                    float dif = hit.collider.bounds.min.x - startPos.x;
-                    endPos = Vector3(dif - .5f, endPos.y);
-                }
-            }
-        }
     }
 }

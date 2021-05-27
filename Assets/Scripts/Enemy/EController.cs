@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class EController : MonoBehaviour
 {
@@ -35,7 +33,6 @@ public class EController : MonoBehaviour
             {
                 //perform behaviors (will be based off of eData)
                 behaviors.BehaviorStyles();
-
             }
         }
         else
