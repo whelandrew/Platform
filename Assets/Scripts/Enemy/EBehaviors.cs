@@ -3,13 +3,15 @@
 //initiate basic behaviors of AI (enemies, etc)
 public class EBehaviors : MonoBehaviour
 {
-    EData eData;
-    EController eController;
+    private EData eData;
+    private EController eController;
 
-    Patrol patrol;
+    public Scan scan;
+    Patrol patrol;    
 
     private bool isIdle = true;
     private bool isPatroling = false;
+    private bool isScanning = false;
 
     private Vector2 startPos;
     private Vector2 endPos;
@@ -25,6 +27,11 @@ public class EBehaviors : MonoBehaviour
 
     private void Update()
     {
+        if(isScanning)
+        {
+
+        }
+        else
         if (isPatroling)
         {
             //TODO switch positions
@@ -42,8 +49,15 @@ public class EBehaviors : MonoBehaviour
 
             // STARTING ACTIONS
             //A - Patrol            
-            StartPatrol();
+            //StartPatrol();
+                //1 - Scan
+                StartScan();
+                    //A - Alert
+                    //B - Attack
             //B - Stationary
+                //1 - Scan
+                    //A - Alert
+                    //B - Attack
 
             //REACTIONS
             //1 - Timid
@@ -63,12 +77,29 @@ public class EBehaviors : MonoBehaviour
         return isIdle;
     }
 
-    void StartPatrol()
+    private void StartScan()
+    {
+        if(isScanning)
+        {
+            scan.SetupScan(this.transform.localPosition, 30, Facing());
+        }
+    }
+
+    private void StartPatrol()
     {
         patrol.SetPatrolLocations(transform.position, canHit, 50f);
 
         eController.finalVelocity = patrol.GetCurrentDirection(this.transform.position) * 0.2f;
 
         isPatroling = true;
+    }
+
+    public int Facing()
+    {
+        if(isPatroling)
+            if (patrol.GoingLeft())
+                return -1;        
+
+        return 1;
     }
 }

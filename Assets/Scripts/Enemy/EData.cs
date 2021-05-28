@@ -4,15 +4,9 @@ using UnityEngine;
 
 public class EData : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    public float speed;
+    public float moveRange;
+    public float scanRange;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    //TODO behavior code
 }

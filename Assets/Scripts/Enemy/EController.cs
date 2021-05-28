@@ -53,7 +53,7 @@ public class EController : MonoBehaviour
 
     private void Facing()
     {
-        if (facing > 0)
+        if (behaviors.Facing() > 0)
         {
             transform.rotation = Quaternion.identity;
         }

@@ -32,6 +32,11 @@ public class Patrol : MonoBehaviour
     private List<patrolPositions> rightPositionsList;
     private List<patrolPositions> lefttPositionsList;
 
+    public bool GoingLeft()
+    {
+        return goingLeft;
+    }
+
     public void SetPatrolLocations(Vector3 _startPos, LayerMask _canHit, float _range)
     {
         range = _range;
@@ -52,36 +57,28 @@ public class Patrol : MonoBehaviour
             if(i<(range*.5f))
             {
                 //right
-                Vector3 hitTarget = new Vector3(startPos.x + i, startPos.y - .5f);
+                Vector3 hitTarget = new Vector3(startPos.x + i, startPos.y);
                 var hit = Physics2D.Linecast(Vector2.up, hitTarget);
                 patrolPositions newPos;
 
-                if (hit.collider != null)
+                if (hit.collider != null)                
                 {
+                    
                     if (!rightPositionsList.Any(j => j.collidedWith == hit.collider.gameObject.layer))
                     {
-                        float dif = hit.collider.bounds.min.x - startPos.x;
-                        Vector2 newRight = new Vector3(dif - .55f, right.y);
+                        float dif = hit.collider.bounds.min.x + startPos.x;
+                        Vector2 newRight = new Vector3(dif - .5f, startPos.y);
 
                         newPos = new patrolPositions(newRight, hit.collider.gameObject.layer, false);
                         rightPositionsList.Add(newPos);
                     }
-                }
-                else
-                {
-                    if (!rightPositionsList.Any(j => j.collidedWith == 0))
-                    {
-                        newPos = new patrolPositions(hitTarget, 0, false);
-
-                        rightPositionsList.Add(newPos);
-                    }
-                }
+                }                
             }
             //set positions for going left
             else
             {
                 //left
-                Vector3 hitTarget = new Vector3(startPos.x - i, startPos.y - .5f);
+                Vector3 hitTarget = new Vector3(startPos.x - i, startPos.y);
                 var hit = Physics2D.Linecast(Vector2.up, hitTarget);
                 patrolPositions newPos;
 
@@ -90,7 +87,7 @@ public class Patrol : MonoBehaviour
                     if (!lefttPositionsList.Any(j => j.collidedWith == hit.collider.gameObject.layer))
                     {
                         float dif = hit.collider.bounds.max.x - startPos.x;
-                        Vector2 newLeft = new Vector3(dif + .55f, left.y);
+                        Vector2 newLeft = new Vector3(dif + .5f, left.y);
 
                         newPos = new patrolPositions(newLeft, hit.collider.gameObject.layer, true);
                         lefttPositionsList.Add(newPos);
@@ -119,27 +116,27 @@ public class Patrol : MonoBehaviour
         foreach(patrolPositions i in rightPositionsList)
         {
             switch(i.collidedWith)
-            {
-                case 0: 
-                    right = new Vector3(i.pos.x - .55f, start.y);
-                    break;
+            {                
                 case 9:
-                    right = new Vector3(i.pos.x - .55f, start.y);
+                    right = new Vector3((i.pos.x - .5f), start.y);
+                    break;
+                case 15:
+                    right = new Vector3((i.pos.x - .3f), start.y);
                     break;
             }
         }
-        //left
-        lefttPositionsList.Reverse();
+
+        //left        
         foreach (patrolPositions i in lefttPositionsList)
         {
             switch (i.collidedWith)
             {
-                case 0:
-                    left = new Vector3(i.pos.x - .55f, start.y);
+                case 8:
+                    left = new Vector3((i.pos.x + .5f), start.y);
                     break;
-                case 9:
-                    left = new Vector3(i.pos.x - .55f, start.y);
-                    break;
+                case 15:
+                    left = new Vector3((i.pos.x + .3f), start.y);
+                    break;                
             }
         }
     }
