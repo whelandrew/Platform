@@ -5,16 +5,23 @@ public class EBehaviors : MonoBehaviour
 {
     private EData eData;
     private EController eController;
+    public LineOfSight lineOfSight;
 
     public Scan scan;
-    Patrol patrol;    
+    Patrol patrol;
+    Alert alert;
+    Pursue pursue;
 
     private bool isIdle = true;
     private bool isPatroling = false;
     private bool isScanning = false;
+    private bool seesPlayer = false;
+    private bool isPursuing = false;
 
     private Vector2 startPos;
     private Vector2 endPos;
+
+    public Vector3 pursueTarget;
 
     public LayerMask canHit;
 
@@ -23,10 +30,18 @@ public class EBehaviors : MonoBehaviour
         eController = GetComponent<EController>();
         eData = GetComponent<EData>();
         patrol = new Patrol();
+        alert = new Alert();
+        pursue = new Pursue();
     }
 
     private void Update()
     {
+        seesPlayer = lineOfSight.playerSeen;
+        if(seesPlayer)
+        {
+            SetPursue();            
+        }
+        else
         if(isScanning)
         {
 
@@ -51,13 +66,16 @@ public class EBehaviors : MonoBehaviour
             //A - Patrol            
             //StartPatrol();
                 //1 - Scan
-                StartScan();
-                    //A - Alert
-                    //B - Attack
+                //StartScan();
+                //A - Alert
+                //B - Pursue
+                   //1 - Attack
+            
             //B - Stationary
                 //1 - Scan
                     //A - Alert
-                    //B - Attack
+                    //B - Pursue
+                        //1 - Attack
 
             //REACTIONS
             //1 - Timid
@@ -75,6 +93,22 @@ public class EBehaviors : MonoBehaviour
     private bool Idle()
     {
         return isIdle;
+    }
+
+    private void SetPursue()
+    {
+        if (isPursuing)
+        {
+            Debug.Log("Pursuing");
+            //eController.finalVelocity = pursueTarget * 0.2f;
+            eController.finalVelocity = pursue.UpdatePursuitDirection(this.transform.position) * 0.2f;
+        }
+        else
+        {
+            isPursuing = true;
+            //pursueTarget = lineOfSight.targetLoc;
+            pursue.SetTarget(lineOfSight.targetLoc, this.transform.position);
+        }        
     }
 
     private void StartScan()
