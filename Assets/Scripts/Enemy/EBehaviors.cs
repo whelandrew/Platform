@@ -39,7 +39,7 @@ public class EBehaviors : MonoBehaviour
         seesPlayer = lineOfSight.playerSeen;
         if(seesPlayer)
         {
-            SetPursue();            
+            //SetPursue();            
         }
         else
         if(isScanning)
@@ -101,7 +101,7 @@ public class EBehaviors : MonoBehaviour
         {
             Debug.Log("Pursuing");
             //eController.finalVelocity = pursueTarget * 0.2f;
-            eController.finalVelocity = pursue.UpdatePursuitDirection(this.transform.position) * 0.2f;
+            eController.finalVelocity = pursue.UpdatePursuitDirection(this.transform.position) * 0.8f;
         }
         else
         {

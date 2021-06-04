@@ -154,7 +154,7 @@ public class Controller : MonoBehaviour
 
 
                 Vector3 final = DashBreak(target);
-                Debug.Log("Final " + final);
+                //Debug.Log("Final " + final);
                 transform.position += final;
                 //transform.position -= target;
 
@@ -166,8 +166,8 @@ public class Controller : MonoBehaviour
 
     private Vector3 DashBreak(Vector3 target)
     {
-        Debug.Log("Start " + transform.position);
-        Debug.Log("DashBreak " + target);
+        //Debug.Log("Start " + transform.position);
+        //Debug.Log("DashBreak " + target);
         Vector3 hitTarget = new Vector3(target.x, transform.position.y);
         var hit = Physics2D.Linecast(Vector2.up, hitTarget);
         if (hit.collider != null)
@@ -180,7 +180,7 @@ public class Controller : MonoBehaviour
                 {
                     //float dif = Vector3.Distance(hit.collider.bounds.max, transform.position);
                     float dif = hit.collider.bounds.max.x - transform.position.x;
-                    Debug.Log(dif);
+                    //Debug.Log(dif);
                     return new Vector3(dif + .5f, target.y);
                 }
                 else
