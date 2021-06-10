@@ -11,6 +11,7 @@ public class EBehaviors : MonoBehaviour
     Patrol patrol;
     Alert alert;
     Pursue pursue;
+    Attack attack;
 
     private bool isIdle = true;
     private bool isPatroling = false;
@@ -32,6 +33,7 @@ public class EBehaviors : MonoBehaviour
         patrol = new Patrol();
         alert = new Alert();
         pursue = new Pursue();
+        attack = new Attack();
     }
 
     private void Update()
